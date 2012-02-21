@@ -1,5 +1,8 @@
 {
-	"GrindstonePath": "C:\\Program Files (x86)\\Grindstone 2",
-	"PivotalEmail": "adavidson@mobileaccord.com",
-	"PivotalPassword": "pivotalPassword"
+	"GrindstonePath": "C:\\Program Files (x86)\\Grindstone 2\\Grindstone 2.exe",
+	"PivotalEmail": "user@company.com",
+	"PivotalPassword": "",
+	"AutoSubmit": false,
+	"AutoClose": true,
+	"ShowTasksFor": "[UsersFirstName]-Current"
 }
