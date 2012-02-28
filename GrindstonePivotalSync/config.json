@@ -4,5 +4,6 @@
 	"PivotalPassword": "",
 	"AutoSubmit": false,
 	"AutoClose": true,
+	"ProfileName": "CompanyName",
 	"ShowTasksFor": "[UsersFirstName]-Current"
 }

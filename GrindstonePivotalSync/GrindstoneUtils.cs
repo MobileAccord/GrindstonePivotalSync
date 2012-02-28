@@ -96,7 +96,7 @@ namespace GrindstonePivotalSync
             column.SetAttribute("width", "50");
             element.AppendChild(column);
             column = xmlDoc.CreateElement("column");
-            column.SetAttribute("name", "Labels");
+            column.SetAttribute("name", "Project");
             column.SetAttribute("width", "100");
             element.AppendChild(column);
             column = xmlDoc.CreateElement("column");
@@ -160,7 +160,7 @@ namespace GrindstonePivotalSync
             customField = xmlDoc.CreateElement("customField");
             customField.SetAttribute("formatPattern", "");
             customField.SetAttribute("matchPattern", "");
-            customField.SetAttribute("name", "Owner");
+            customField.SetAttribute("name", "Project");
             customField.SetAttribute("removeMatch", "true");
             customField.SetAttribute("taskForceRemoveMatch", "true");
             element.AppendChild(customField);
@@ -168,6 +168,13 @@ namespace GrindstonePivotalSync
             customField.SetAttribute("formatPattern", "");
             customField.SetAttribute("matchPattern", "");
             customField.SetAttribute("name", "Labels");
+            customField.SetAttribute("removeMatch", "true");
+            customField.SetAttribute("taskForceRemoveMatch", "true");
+            element.AppendChild(customField);
+            customField = xmlDoc.CreateElement("customField");
+            customField.SetAttribute("formatPattern", "");
+            customField.SetAttribute("matchPattern", "");
+            customField.SetAttribute("name", "Owner");
             customField.SetAttribute("removeMatch", "true");
             customField.SetAttribute("taskForceRemoveMatch", "true");
             element.AppendChild(customField);
@@ -188,7 +195,7 @@ namespace GrindstonePivotalSync
             return element;
         }
 
-        public static XmlElement CreateTaskElement(XmlDocument xmlDoc, Story story, string batchFilePath)
+        public static XmlElement CreateTaskElement(XmlDocument xmlDoc, string projectName, Story story, string batchFilePath)
         {
             var element = xmlDoc.CreateElement("task");
             element.SetAttribute("name", story.name);
@@ -221,12 +228,16 @@ namespace GrindstonePivotalSync
             customValue.SetAttribute("value", story.status);
             element.AppendChild(customValue);
             customValue = xmlDoc.CreateElement("customValue");
-            customValue.SetAttribute("name", "Owner");
-            customValue.SetAttribute("value", story.owner);
+            customValue.SetAttribute("name", "Project");
+            customValue.SetAttribute("value", projectName);
             element.AppendChild(customValue);
             customValue = xmlDoc.CreateElement("customValue");
             customValue.SetAttribute("name", "Labels");
             customValue.SetAttribute("value", story.labels);
+            element.AppendChild(customValue);
+            customValue = xmlDoc.CreateElement("customValue");
+            customValue.SetAttribute("name", "Owner");
+            customValue.SetAttribute("value", story.owner);
             element.AppendChild(customValue);
             customValue = xmlDoc.CreateElement("customValue");
             customValue.SetAttribute("name", "Filter");
@@ -239,9 +250,9 @@ namespace GrindstonePivotalSync
             return element;
         }
 
-        public static XmlNodeList GetUnsubmittedTimeNodes(XmlDocument xmlDoc)
+        public static XmlNodeList GetUnsubmittedTimeNodes(XmlDocument xmlDoc, string profileName)
         {
-            return xmlDoc.SelectNodes("/config/profile[@name != \"Default\"]/task/time[not(text()[contains(.,'[submitted]')])]");
+            return xmlDoc.SelectNodes(String.Format("/config/profile[@name = \"{0}\"]/task/time[not(text()[contains(.,'[submitted]')])]", profileName));
         }
     }
 }

@@ -38,6 +38,10 @@ namespace GrindstonePivotalCommon
                 var jsonObject = (JObject)JsonConvert.DeserializeObject(sbConfig.ToString().Replace("\t", string.Empty));
 
                 // Load the grindstone path
+                if (jsonObject["GrindstonePath"] == null)
+                {
+                    throw new Exception("The 'GrindstonePath' in the config file appears to be missing.");
+                }
                 config.GrindstonePath = jsonObject["GrindstonePath"].ToString().Trim('"').Replace("\\\\", "\\");
                 if (config.GrindstonePath == string.Empty)
                 {
@@ -51,16 +55,27 @@ namespace GrindstonePivotalCommon
                 }
 
                 // Load the pivotal email
+                if (jsonObject["PivotalEmail"] == null)
+                {
+                    throw new Exception("The 'PivotalEmail' in the config file appears to be missing.");
+                }
                 config.Email = jsonObject["PivotalEmail"].ToString().Trim('"');
                 if (config.Email == string.Empty)
                 {
                     throw new Exception("The 'PivotalEmail' in the config file does not appear to be set.");
                 }
 
+                // Load the pivotal password
+                if (jsonObject["PivotalPassword"] == null)
+                {
+                    throw new Exception("The 'PivotalPassword' in the config file appears to be missing.");
+                }
+                config.Password = jsonObject["PivotalPassword"].ToString().Trim('"');
+
                 // Load the AutoSubmit bool
                 if (jsonObject["AutoSubmit"] == null)
                 {
-                    throw new Exception("The 'AutoSubmit' in the config file does not appear to be set.");
+                    throw new Exception("The 'AutoSubmit' in the config file appears to be missing.");
                 }
                 if (!bool.TryParse(jsonObject["AutoSubmit"].ToString(), out config.AutoSubmit))
                 {
@@ -70,18 +85,26 @@ namespace GrindstonePivotalCommon
                 // Load the AutoSubmit bool
                 if (jsonObject["AutoClose"] == null)
                 {
-                    throw new Exception("The 'AutoClose' in the config file does not appear to be set.");
+                    throw new Exception("The 'AutoClose' in the config file appears to be missing.");
                 }
                 if (!bool.TryParse(jsonObject["AutoClose"].ToString(), out config.AutoClose))
                 {
                     throw new Exception("Unable to parse the 'AutoClose' field (boolean) in the config file.");
                 }
 
-                // Load the ShowTasksFor string
-                config.ShowTasksFor = jsonObject["ShowTasksFor"].ToString().Trim('"');
+                // Load the ProfileName string
+                if (jsonObject["ProfileName"] == null)
+                {
+                    throw new Exception("The 'ProfileName' in the config file appears to be missing.");
+                }
+                config.ProfileName = jsonObject["ProfileName"].ToString().Trim('"');
 
-                // Load the pivotal password
-                config.Password = jsonObject["PivotalPassword"].ToString().Trim('"');
+                // Load the ShowTasksFor string
+                if (jsonObject["ShowTasksFor"] == null)
+                {
+                    throw new Exception("The 'ShowTasksFor' in the config file appears to be missing.");
+                }
+                config.ShowTasksFor = jsonObject["ShowTasksFor"].ToString().Trim('"');
 
                 return config;
             }
@@ -601,7 +624,7 @@ namespace GrindstonePivotalCommon
             }
         }
 
-        public static bool SubmitTime(ref CookieCollection cookies, string userId, string projectId, DateTime startTime, TimeSpan timespan, string storyLabels, string storyName, string taskNote)
+        public static bool SubmitTime(ref CookieCollection cookies, string userId, string projectId, DateTime startTime, TimeSpan timespan, string projectName, string storyName, string taskNote)
         {
             // Determine the task time and round up to the nearest 15 minute interval
             var totalTime = timespan.Hours + Math.Ceiling((timespan.Minutes % 60) / 15.0) / 4.00;
@@ -609,7 +632,7 @@ namespace GrindstonePivotalCommon
 
             // Determine the task description to be submitted to Pivotal Tracker
             var description =
-                String.Concat((!String.IsNullOrEmpty(storyLabels) ? String.Concat(storyLabels, ": ") : string.Empty),
+                String.Concat((!String.IsNullOrEmpty(projectName) ? String.Concat(projectName, ": ") : string.Empty),
                               storyName,
                               (!String.IsNullOrEmpty(taskNote) ? String.Concat(": ", taskNote) : string.Empty));
 
@@ -772,6 +795,7 @@ namespace GrindstonePivotalCommon
         public string Password;
         public bool AutoSubmit;
         public bool AutoClose;
+        public string ProfileName;
         public string ShowTasksFor;
     }
 

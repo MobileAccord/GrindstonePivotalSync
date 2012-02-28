@@ -128,7 +128,7 @@ namespace GrindstonePivotalSync
             Console.WriteLine("Grindstone xml file loaded.");
 
             var totalTime = new TimeSpan();
-            var timeNodes = GrindstoneUtils.GetUnsubmittedTimeNodes(xmlDoc);
+            var timeNodes = GrindstoneUtils.GetUnsubmittedTimeNodes(xmlDoc, config.ProfileName);
             if (timeNodes == null)
             {
                 ShowErrorAndWait("Unable to get time nodes from grindstone xml.");
@@ -229,25 +229,19 @@ namespace GrindstonePivotalSync
                 projectIds.Add(project.name, project.id.ToString());
 
                 // Find the profile node
-                var profileNode = xmlDoc.SelectSingleNode(String.Format("/config/profile[@name = \"{0}\"]", project.name));
+                var profileNode = xmlDoc.SelectSingleNode(String.Format("/config/profile[@name = \"{0}\"]", config.ProfileName));
 
                 // Add the profile node if it does not exist
                 if (profileNode == null)
                 {
-                    var element = GrindstoneUtils.CreateProfileElement(xmlDoc, project.name);
+                    var element = GrindstoneUtils.CreateProfileElement(xmlDoc, config.ProfileName);
                     var configNode = xmlDoc.SelectSingleNode("/config");
                     if (configNode != null) configNode.AppendChild(element);
-                    profileNode = xmlDoc.SelectSingleNode(String.Format("/config/profile[@name = \"{0}\"]", project.name));
+                    profileNode = xmlDoc.SelectSingleNode(String.Format("/config/profile[@name = \"{0}\"]", config.ProfileName));
                 }
 
                 // Make sure the profile node is not null, this should never happen
                 if (profileNode == null) continue;
-
-                // Update the name of the profile node if it has changed
-                if (profileNode.Attributes["name"] != null && profileNode.Attributes["name"].InnerText != project.name)
-                {
-                    ((XmlElement)profileNode).SetAttribute("name", project.name);
-                }
 
                 // Iterate through the stories of the project
                 foreach (var story in project.stories)
@@ -277,12 +271,12 @@ namespace GrindstonePivotalSync
                     // Add the story node if it does not exist
                     if (storyIdNode == null)
                     {
-                        var element = GrindstoneUtils.CreateTaskElement(xmlDoc, story, gplBatchFile);
+                        var element = GrindstoneUtils.CreateTaskElement(xmlDoc, project.name, story, gplBatchFile);
                         var textNode = xmlDoc.CreateTextNode((!string.IsNullOrEmpty(config.ShowTasksFor) && config.ShowTasksFor == story.filter) ?
                             String.Concat(element.InnerXml, BuildStoryDescription(token, project.id, story.id, story.description)) :
                             story.description);
                         element.AppendChild(textNode);
-                        var profileNodeByName = xmlDoc.SelectSingleNode(String.Format("/config/profile[@name = \"{0}\"]", project.name));
+                        var profileNodeByName = xmlDoc.SelectSingleNode(String.Format("/config/profile[@name = \"{0}\"]", config.ProfileName));
                         if (profileNodeByName != null) profileNodeByName.AppendChild(element);
                         Console.Write(String.Format("\r{0} / {1} stories processed.", storiesProcessed, storyCount));
                         continue;
@@ -309,21 +303,18 @@ namespace GrindstonePivotalSync
                         }
                     }
 
-                    // Add update node if it does not exist
-                    // TODO: This can be removed on the next update.
-                    if (storyNode.SelectSingleNode("customValue[@name = \"Order\"]") == null)
-                    {
-                        var updateElement = xmlDoc.CreateElement("customValue");
-                        updateElement.SetAttribute("name", "Order");
-                        updateElement.SetAttribute("value", story.order.ToString());
-                        storyNode.AppendChild(updateElement);
-                    }
-                    if (storyNode.SelectSingleNode("customValue[@name = \"Update\"]") == null)
+                    // Update the update node if it does not exist or has changed
+                    var updateNode = (XmlElement)storyNode.SelectSingleNode("customValue[@name = \"Update\"]");
+                    if (updateNode == null)
                     {
                         var updateElement = xmlDoc.CreateElement("customValue");
                         updateElement.SetAttribute("name", "Update");
                         updateElement.SetAttribute("value", gplBatchFile);
                         storyNode.AppendChild(updateElement);
+                    }
+                    else if (updateNode.Attributes["value"] != null && updateNode.Attributes["value"].InnerText != gplBatchFile)
+                    {
+                        updateNode.SetAttribute("value", gplBatchFile);
                     }
 
                     // Update description and story tasks for current stories
@@ -380,7 +371,7 @@ namespace GrindstonePivotalSync
                 }
 
                 // Submit all unsubmitted time to pivotal tracker
-                timeNodes = GrindstoneUtils.GetUnsubmittedTimeNodes(xmlDoc);
+                timeNodes = GrindstoneUtils.GetUnsubmittedTimeNodes(xmlDoc, config.ProfileName);
                 if (timeNodes.Count > 0)
                 {
                     Console.WriteLine("Submitting time to Pivotal Tracker...");
@@ -398,11 +389,12 @@ namespace GrindstonePivotalSync
                         if (taskTime.storyName == null)
                         {
                             var profileNode = (XmlElement)(taskNode.ParentNode);
-                            if (!projectIds.ContainsKey(profileNode.Attributes["name"].InnerText)) continue;
+                            if (profileNode.Attributes["name"].InnerText != config.ProfileName) continue;
+                            var projectNode = taskNode.SelectSingleNode("customValue[@name = \"Project\"]");
                             var labelsNode = taskNode.SelectSingleNode("customValue[@name = \"Labels\"]");
                             taskTime = new TaskTime
                             {
-                                projectName = profileNode.Attributes["name"].InnerText,
+                                projectName = (projectNode != null ? projectNode.Attributes["value"].InnerText : string.Empty),
                                 startTime = startTime,
                                 startTimes = new List<string>(),
                                 timeSpans = new List<TimeSpan>(),
@@ -428,9 +420,9 @@ namespace GrindstonePivotalSync
                         var totalTaskTime = new TimeSpan();
                         totalTaskTime = taskTime.timeSpans.Aggregate(totalTaskTime, (current, time) => current.Add(time));
 
-                        if (PivotalUtils.SubmitTime(ref cookies, userId, projectId, taskTime.startTime, totalTaskTime, taskTime.storyLabels, taskTime.storyName, taskTime.taskNote))
+                        if (PivotalUtils.SubmitTime(ref cookies, userId, projectId, taskTime.startTime, totalTaskTime, taskTime.projectName, taskTime.storyName, taskTime.taskNote))
                         {
-                            var timeNodesByStoryName = xmlDoc.SelectNodes(String.Format("/config/profile[@name = \"{0}\"]/task[@name = \"{1}\"]/time[not(text()[contains(.,'[submitted]')])]", taskTime.projectName, taskTime.storyName));
+                            var timeNodesByStoryName = xmlDoc.SelectNodes(String.Format("/config/profile[@name = {0}]/task[@name = {1}]/time[not(text()[contains(.,'[submitted]')])]", GetXpathStringForAttributeValue(taskTime.projectName), GetXpathStringForAttributeValue(taskTime.storyName)));
                             if (timeNodesByStoryName == null) continue;
                             foreach (XmlElement timeNode in timeNodesByStoryName)
                             {
@@ -510,6 +502,61 @@ namespace GrindstonePivotalSync
         {
             Console.WriteLine(String.Concat("Error: ", errorMessage));
             System.Threading.Thread.Sleep(10000);
+        }
+
+        /// <summary>
+        /// Returns a valid XPath statement to use for searching attribute values regardless of 's or "s
+        /// </summary>
+        /// <param name="attributeValue">Attribute value to parse</param>
+        /// <returns>Parsed attribute value in concat() if needed</returns>
+        static string GetXpathStringForAttributeValue(string attributeValue)
+        {
+            var hasApos = attributeValue.Contains("'");
+            var hasQuote = attributeValue.Contains("\"");
+
+            if (!hasApos)
+            {
+                return "'" + attributeValue + "'";
+            }
+            if (!hasQuote)
+            {
+                return "\"" + attributeValue + "\"";
+            }
+
+            var result = new StringBuilder("concat(");
+            var currentArgument = new StringBuilder();
+            for (var pos = 0; pos < attributeValue.Length; pos++)
+            {
+                switch (attributeValue[pos])
+                {
+                    case '\'':
+                        result.Append('\"');
+                        result.Append(currentArgument.ToString());
+                        result.Append("'\",");
+                        currentArgument.Length = 0;
+                        break;
+                    case '\"':
+                        result.Append('\'');
+                        result.Append(currentArgument.ToString());
+                        result.Append("\"\',");
+                        currentArgument.Length = 0;
+                        break;
+                    default:
+                        currentArgument.Append(attributeValue[pos]);
+                        break;
+                }
+            }
+            if (currentArgument.Length == 0)
+            {
+                result[result.Length - 1] = ')';
+            }
+            else
+            {
+                result.Append("'");
+                result.Append(currentArgument.ToString());
+                result.Append("')");
+            }
+            return result.ToString();
         }
     }
 }
