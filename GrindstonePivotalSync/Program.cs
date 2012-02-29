@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Windows.Forms;
 using System.Xml;
 using GrindstonePivotalCommon;
 
@@ -212,7 +213,7 @@ namespace GrindstonePivotalSync
             Console.WriteLine(String.Format("{0} projects and {1} stories found in Pivotal Tracker.", projects.Count, storyCount));
 
             // Get the GrindstonePivotalLink batch files
-            var gplBatchFolder = string.Concat(baseDir, "batch_files");
+            var gplBatchFolder = string.Concat(Application.UserAppDataPath, "\\batch_files");
             if (!Directory.Exists(gplBatchFolder))
             {
                 Directory.CreateDirectory(gplBatchFolder);
@@ -260,7 +261,7 @@ namespace GrindstonePivotalSync
                     if (!gplBatchFiles.Contains(string.Format("gpl_{0}_{1}.bat", project.id, story.id)))
                     {
                         TextWriter tw = new StreamWriter(gplBatchFile);
-                        tw.WriteLine(string.Format("start {0}GrindstonePivotalLink.exe ProjectId={1} StoryId={2}", baseDir, project.id, story.id));
+                        tw.WriteLine(string.Format("start \"\" \"{0}GrindstonePivotalLink.exe\" ProjectId={1} StoryId={2}", baseDir, project.id, story.id));
                         tw.WriteLine("exit");
                         tw.Close();
                     }

@@ -1,0 +1,21 @@
+-----------------------------
+Summary
+-----------------------------
+Grindstone Pivotal Sync is a tool that allows a user to track their time for stories set up in Pivotal Tracker using Grindstone 2. The sync performs two separate tasks. First, the sync tool will update Grindstone with all the stories that a user has access to in Pivotal Tracker. Second, the sync tool will take the time tracked for a particular story and submit that time to Pivotal Tracker. Grindstone Pivotal Sync also extends the functionality of Grindstone 2 to allow a user to view a story description and comments, as well as update story tasks, comments, owner, and state.
+
+-----------------------------
+Installation Notes
+-----------------------------
+During the installation of Grindstone Pivotal Sync some configuration options will need to be set up. First, the program will need to know the email address and password used to log into Pivotal Tracker. If you do not want your password stored in clear text then simply omit your password and when you run the sync tool it will prompt you to enter your Pivotal Tracker password. You will also need to provide your full name (matching the name used in Pivotal Tracker) which is used to determine which stories in Pivotal Tracker to download associated tasks for. Next the installation will need to know the name of the profile that should be set up in Grindstone 2 to hold the stories imported from Pivotal Tracker. The last two options that need to be configured are auto close and auto submit. Auto close will prevent the sync tool from requiring user input before closing grindstone when the sync tool is run. Auto submit will automatically submit tracked time to Pivotal Tracker without requiring user approval prior to submission.
+
+-----------------------------
+Usage Tips
+-----------------------------
+- Double click a task to view the story description.
+- Set up GrindstonePivotalSync.exe to run as a scheduled task at the end of the work day.
+- Group stories in Grindstone 2 by project name to match the grouping used by Pivotal Tracker.
+- Enable the “Order” column in Grindstone and sort by this column to see the stories ordered by priority.
+- Set up the following views in grindstone "[FullName]-backlog", "[FullName]-current", "[FullName]-done" and replace [FullName] with your full name not including any spaces.
+- This tool will submit your time to Pivotal tracker using the following format: "[Project Name]: [Task Name]: [Task Notes]".
+- Times that have been submitted to Pivotal Tracker will contain “[submitted]” in the task notes.
+- To update the configuration options you will need to reinstall Grindstone Pivotal Sync.

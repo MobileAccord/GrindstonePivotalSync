@@ -114,6 +114,38 @@ namespace GrindstonePivotalCommon
             }
         }
 
+
+        public static void WriteConfig(Config config, string path)
+        {
+            var oldPath = String.Concat(path, ".old");
+            File.Copy(path, oldPath, true);
+            File.Delete(path);
+
+            var configObject = new Dictionary<string, object>
+                                   {
+                                       {"GrindstonePath", config.GrindstonePath},
+                                       {"PivotalEmail", config.Email},
+                                       {"PivotalPassword", config.Password},
+                                       {"AutoClose", config.AutoClose},
+                                       {"AutoSubmit", config.AutoSubmit},
+                                       {"ProfileName", config.ProfileName},
+                                       {"ShowTasksFor", config.ShowTasksFor}
+                                   };
+
+            try
+            {
+                File.WriteAllText(path, JsonConvert.SerializeObject(configObject));
+            }
+            catch (Exception)
+            {
+                File.Copy(oldPath, path, true);
+            }
+            finally
+            {
+                File.Delete(oldPath);
+            }
+        }
+
         public static string GetPivotalTrackerUserToken(string username, string password)
         {
             // Setup the return string
@@ -454,7 +486,7 @@ namespace GrindstonePivotalCommon
                 DateTime.TryParse(acceptedAt, out dtCompleted);
             }
             var sbFilter = new StringBuilder();
-            sbFilter.Append(storyNode["owned_by"] != null ? storyNode["owned_by"].InnerText.Split(new char[] { ' ' })[0] : string.Empty);
+            sbFilter.Append(storyNode["owned_by"] != null ? storyNode["owned_by"].InnerText.Replace(" ", "") : string.Empty);
             sbFilter.Append("-");
             sbFilter.Append(storyNode["current_state"] != null ? GetStatus(storyNode["current_state"].InnerText) : string.Empty);
             return new Story
@@ -793,8 +825,8 @@ namespace GrindstonePivotalCommon
         public string GrindstonePath;
         public string Email;
         public string Password;
-        public bool AutoSubmit;
         public bool AutoClose;
+        public bool AutoSubmit;
         public string ProfileName;
         public string ShowTasksFor;
     }

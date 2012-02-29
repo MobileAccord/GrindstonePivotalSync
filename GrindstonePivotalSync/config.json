@@ -2,8 +2,8 @@
 	"GrindstonePath": "C:\\Program Files (x86)\\Grindstone 2\\Grindstone 2.exe",
 	"PivotalEmail": "user@company.com",
 	"PivotalPassword": "",
+	"AutoClose": false,
 	"AutoSubmit": false,
-	"AutoClose": true,
 	"ProfileName": "CompanyName",
 	"ShowTasksFor": "[UsersFirstName]-Current"
 }
