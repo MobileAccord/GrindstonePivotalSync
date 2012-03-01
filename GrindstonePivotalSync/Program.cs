@@ -146,7 +146,7 @@ namespace GrindstonePivotalSync
             }
             if (submitTime)
             {
-                Console.WriteLine(String.Concat(totalTime.Hours, " hours and ", totalTime.Minutes, " minutes of unsubmitted time found (unrounded)."));
+                Console.WriteLine(String.Concat((totalTime.Hours + (totalTime.Days * 24)), " hours and ", totalTime.Minutes, " minutes of unsubmitted time found (unrounded)."));
                 if (!config.AutoSubmit)
                 {
                     Console.WriteLine("Hit enter to continue, esc to exit, or spacebar to open grindstone.");
