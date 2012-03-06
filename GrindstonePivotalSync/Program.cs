@@ -414,8 +414,14 @@ namespace GrindstonePivotalSync
                     }
 
                     var tasksProcessed = 0;
+                    var tasksSkipped = new List<string>();
                     foreach (var taskTime in taskTimes)
                     {
+                        if (!projectIds.ContainsKey(taskTime.projectName))
+                        {
+                            tasksSkipped.Add(String.Format("Invalid project name found for task: {0}.", taskTime.storyName));
+                            continue;
+                        }
                         var projectId = projectIds[taskTime.projectName];
 
                         var totalTaskTime = new TimeSpan();
@@ -436,6 +442,15 @@ namespace GrindstonePivotalSync
 
                         tasksProcessed++;
                         Console.Write(String.Format("\r{0} / {1} tasks processed.", tasksProcessed, taskTimes.Count));
+                    }
+
+                    if (tasksSkipped.Count > 0)
+                    {
+                        Console.Write("Errors occurred while processing tasks...");
+                        foreach (var taskSkipped in tasksSkipped)
+                        {
+                            Console.Write(taskSkipped);
+                        }
                     }
 
                     // Re-save the xml document
