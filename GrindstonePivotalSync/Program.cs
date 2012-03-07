@@ -429,14 +429,11 @@ namespace GrindstonePivotalSync
 
                         if (PivotalUtils.SubmitTime(ref cookies, userId, projectId, taskTime.startTime, totalTaskTime, taskTime.projectName, taskTime.storyName, taskTime.taskNote))
                         {
-                            var timeNodesByStoryName = xmlDoc.SelectNodes(String.Format("/config/profile[@name = {0}]/task[@name = {1}]/time[not(text()[contains(.,'[submitted]')])]", GetXpathStringForAttributeValue(taskTime.projectName), GetXpathStringForAttributeValue(taskTime.storyName)));
-                            if (timeNodesByStoryName == null) continue;
-                            foreach (XmlElement timeNode in timeNodesByStoryName)
+                            var timeNodesByStoryName = (from XmlNode timeNode in timeNodes let taskNode = timeNode.ParentNode where taskNode.Attributes["name"].InnerText == taskTime.storyName && taskTime.startTimes.Contains(timeNode.Attributes["start"].InnerText) select timeNode).ToList();
+                            if (timeNodesByStoryName.Count == 0) continue;
+                            foreach (var timeNode in timeNodesByStoryName.Cast<XmlElement>().Where(timeNode => timeNode != null))
                             {
-                                if (timeNode != null && taskTime.startTimes.Contains(timeNode.Attributes["start"].InnerText) && timeNode.InnerText.IndexOf("[submitted]") < 0)
-                                {
-                                    timeNode.InnerText += " [submitted]";
-                                }
+                                timeNode.InnerText += " [submitted]";
                             }
                         }
 
@@ -518,61 +515,6 @@ namespace GrindstonePivotalSync
         {
             Console.WriteLine(String.Concat("Error: ", errorMessage));
             System.Threading.Thread.Sleep(10000);
-        }
-
-        /// <summary>
-        /// Returns a valid XPath statement to use for searching attribute values regardless of 's or "s
-        /// </summary>
-        /// <param name="attributeValue">Attribute value to parse</param>
-        /// <returns>Parsed attribute value in concat() if needed</returns>
-        static string GetXpathStringForAttributeValue(string attributeValue)
-        {
-            var hasApos = attributeValue.Contains("'");
-            var hasQuote = attributeValue.Contains("\"");
-
-            if (!hasApos)
-            {
-                return "'" + attributeValue + "'";
-            }
-            if (!hasQuote)
-            {
-                return "\"" + attributeValue + "\"";
-            }
-
-            var result = new StringBuilder("concat(");
-            var currentArgument = new StringBuilder();
-            for (var pos = 0; pos < attributeValue.Length; pos++)
-            {
-                switch (attributeValue[pos])
-                {
-                    case '\'':
-                        result.Append('\"');
-                        result.Append(currentArgument.ToString());
-                        result.Append("'\",");
-                        currentArgument.Length = 0;
-                        break;
-                    case '\"':
-                        result.Append('\'');
-                        result.Append(currentArgument.ToString());
-                        result.Append("\"\',");
-                        currentArgument.Length = 0;
-                        break;
-                    default:
-                        currentArgument.Append(attributeValue[pos]);
-                        break;
-                }
-            }
-            if (currentArgument.Length == 0)
-            {
-                result[result.Length - 1] = ')';
-            }
-            else
-            {
-                result.Append("'");
-                result.Append(currentArgument.ToString());
-                result.Append("')");
-            }
-            return result.ToString();
         }
     }
 }
