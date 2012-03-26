@@ -189,20 +189,48 @@ namespace GrindstonePivotalCommon
             return token;
         }
 
-        public static CookieCollection GetPivotalTrackerSessionCookie(string username, string password)
+        public static CookieCollection GetPivotalTrackerSessionCookie(string username, string password, out string authenticityToken)
         {
             // Setup the return cookie collection
             CookieCollection cookies = null;
 
-            // Set up the web request
+            // Get authenticity_token
             var request = (HttpWebRequest)WebRequest.Create("https://www.pivotaltracker.com/signin");
+            request.Method = "GET";
+            request.CookieContainer = new CookieContainer();
+            var authenticity_token = string.Empty;
+            using (var response = (HttpWebResponse)request.GetResponse())
+            {
+                if (response.StatusCode == HttpStatusCode.OK && response.Cookies != null)
+                {
+                    var responseStream = response.GetResponseStream();
+                    cookies = response.Cookies;
+                    if (responseStream != null)
+                    {
+                        var html = string.Empty;
+                        html = (new StreamReader(responseStream)).ReadToEnd();
+                        html = html.Substring(html.IndexOf("authenticity_token"));
+                        html = html.Substring(html.IndexOf("value=") + 7);
+                        authenticity_token = html.Substring(0, html.IndexOf("\""));
+                    }
+                }
+            }
+            authenticityToken = authenticity_token;
+            if (authenticityToken == string.Empty)
+            {
+                throw new Exception("Unable to retrieve Pivotal Tracker authenticity token.");
+            }
+
+            // Set up the web request
+            request = (HttpWebRequest)WebRequest.Create("https://www.pivotaltracker.com/signin");
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             request.CookieContainer = new CookieContainer();
+            request.CookieContainer.Add(cookies);
 
             // Build the post data string
-            var postData = String.Format("credentials%5Busername%5D={0}&credentials%5Bpassword%5D={1}&time_zone_offset={2}",
-                                         Uri.EscapeDataString(username), Uri.EscapeDataString(password), TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Hours);
+            var postData = String.Format("authenticity_token={0}&credentials%5Busername%5D={1}&credentials%5Bpassword%5D={2}&time_zone_offset={3}",
+                                         Uri.EscapeDataString(authenticityToken), Uri.EscapeDataString(username), Uri.EscapeDataString(password), TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Hours);
 
             // Encode the post data and write the data to the request stream
             var encoding = new ASCIIEncoding();
@@ -656,7 +684,7 @@ namespace GrindstonePivotalCommon
             }
         }
 
-        public static bool SubmitTime(ref CookieCollection cookies, string userId, string projectId, DateTime startTime, TimeSpan timespan, string projectName, string storyName, string taskNote)
+        public static bool SubmitTime(ref CookieCollection cookies, string authenticityToken, string userId, string projectId, DateTime startTime, TimeSpan timespan, string projectName, string storyName, string taskNote)
         {
             // Determine the task time and round up to the nearest 15 minute interval
             var totalTime = timespan.Hours + Math.Ceiling((timespan.Minutes % 60) / 15.0) / 4.00;
@@ -676,8 +704,8 @@ namespace GrindstonePivotalCommon
             request.CookieContainer.Add(cookies);
 
             // Build the post data string
-            var postData = String.Format("shift%5Bperson_id%5D={0}&shift%5Bproject_id%5D={1}&shift%5Bdate%5D={2}&shift%5Bhours%5D={3}&shift%5Bdescription%5D={4}&commit=Save",
-                                         userId, projectId, Uri.EscapeDataString(startTime.ToShortDateString()), totalTime, Uri.EscapeDataString(description));
+            var postData = String.Format("authenticity_token={0}&shift%5Bperson_id%5D={1}&shift%5Bproject_id%5D={2}&shift%5Bdate%5D={3}&shift%5Bhours%5D={4}&shift%5Bdescription%5D={5}&commit=Save",
+                                         Uri.EscapeDataString(authenticityToken), userId, projectId, Uri.EscapeDataString(startTime.ToShortDateString()), totalTime, Uri.EscapeDataString(description));
 
             // Encode the post data and write the data to the request stream
             var encoding = new ASCIIEncoding();

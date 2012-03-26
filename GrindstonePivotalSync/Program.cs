@@ -348,10 +348,11 @@ namespace GrindstonePivotalSync
             if (submitTime)
             {
                 // Get pivotal tracker session cookies
+                string authenticityToken = string.Empty;
                 CookieCollection cookies;
                 try
                 {
-                    cookies = PivotalUtils.GetPivotalTrackerSessionCookie(config.Email, config.Password);
+                    cookies = PivotalUtils.GetPivotalTrackerSessionCookie(config.Email, config.Password, out authenticityToken);
                 }
                 catch (Exception ex)
                 {
@@ -427,7 +428,7 @@ namespace GrindstonePivotalSync
                         var totalTaskTime = new TimeSpan();
                         totalTaskTime = taskTime.timeSpans.Aggregate(totalTaskTime, (current, time) => current.Add(time));
 
-                        if (PivotalUtils.SubmitTime(ref cookies, userId, projectId, taskTime.startTime, totalTaskTime, taskTime.projectName, taskTime.storyName, taskTime.taskNote))
+                        if (PivotalUtils.SubmitTime(ref cookies, authenticityToken, userId, projectId, taskTime.startTime, totalTaskTime, taskTime.projectName, taskTime.storyName, taskTime.taskNote))
                         {
                             var timeNodesByStoryName = (from XmlNode timeNode in timeNodes let taskNode = timeNode.ParentNode where taskNode.Attributes["name"].InnerText == taskTime.storyName && taskTime.startTimes.Contains(timeNode.Attributes["start"].InnerText) select timeNode).ToList();
                             if (timeNodesByStoryName.Count == 0) continue;

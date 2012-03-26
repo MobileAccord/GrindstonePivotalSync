@@ -136,7 +136,8 @@ namespace GrindstonePivotalLink
             // Set up the story owner
             try
             {
-                var sessionCookie = PivotalUtils.GetPivotalTrackerSessionCookie(config.Email, config.Password);
+                var authenticityToken = string.Empty;
+                var sessionCookie = PivotalUtils.GetPivotalTrackerSessionCookie(config.Email, config.Password, out authenticityToken);
                 owners = PivotalUtils.GetUserIds(ref sessionCookie);
             }
             catch (Exception)
